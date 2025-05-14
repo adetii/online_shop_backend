@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import connectDB from './config/db.js';
 import cors from 'cors';
+
 // Import routes
 import productRoutes from './routes/productRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -16,44 +17,51 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+
 // Load environment variables
 dotenv.config();
-// __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
+// \_\_dirname for ES modules
+const \_\_filename = fileURLToPath(import.meta.url);
+const \_\_dirname = path.dirname(\_\_filename);
+
 // Connect to MongoDB
 connectDB();
+
 const app = express();
+
 // Helper to pick a color per method
 function colorMethod(method) {
-  switch (method) {
-    case 'GET':    return chalk.green(method);
-    case 'POST':   return chalk.blue(method);
-    case 'PUT':    return chalk.yellow(method);
-    case 'DELETE': return chalk.red(method);
-    case 'PATCH':  return chalk.magenta(method);
-    default:       return chalk.white(method);
-  }
+switch (method) {
+case 'GET':    return chalk.green(method);
+case 'POST':   return chalk.blue(method);
+case 'PUT':    return chalk.yellow(method);
+case 'DELETE': return chalk.red(method);
+case 'PATCH':  return chalk.magenta(method);
+default:       return chalk.white(method);
 }
+}
+
 // Morgan format function with colored method
 app.use(morgan((tokens, req, res) => {
-  const meth   = tokens.method(req, res);
-  const url    = tokens.url(req, res);
-  const status = tokens.status(req, res);
-  const time   = tokens['response-time'](req, res) + ' ms';
-  const coloredMethod = colorMethod(meth);
-  return `${coloredMethod} ${url} ${status} ${time}`;
+const meth   = tokens.method(req, res);
+const url    = tokens.url(req, res);
+const status = tokens.status(req, res);
+const time   = tokens\['response-time']\(req, res) + ' ms';
+const coloredMethod = colorMethod(meth);
+
+return `${coloredMethod} ${url} ${status} ${time}`;
 }));
+
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // Allow requests from your frontend
-  credentials: true
-}));
+app.use(cors());
+
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(\_\_dirname, '../uploads')));
+
 // API routes
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
@@ -63,33 +71,12 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/contact', contactRoutes);
 
-// Simple route to check if API is running
-app.get('/', (req, res) => {
-  res.send('API is running...');
-});
+// Error handlers
+app.use(notFound);
+app.use(errorHandler);
 
-// Error handling middleware
-const notFound = (req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
-};
-
-const errorHandler = (err, req, res, next) => {
-  // If status code is 200, set it to 500 (server error)
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  
-  // Set status code
-  res.status(statusCode);
-  
-  // Send JSON response
-  res.json({
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
-  });
-};
 // Start server
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+console.log(`Server running on port ${port}`);
 });
