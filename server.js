@@ -21,9 +21,9 @@ import uploadRoutes from './routes/uploadRoutes.js';
 // Load environment variables
 dotenv.config();
 
-// \_\_dirname for ES modules
-const \_\_filename = fileURLToPath(import.meta.url);
-const \_\_dirname = path.dirname(\_\_filename);
+// __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Connect to MongoDB
 connectDB();
@@ -32,35 +32,42 @@ const app = express();
 
 // Helper to pick a color per method
 function colorMethod(method) {
-switch (method) {
-case 'GET':    return chalk.green(method);
-case 'POST':   return chalk.blue(method);
-case 'PUT':    return chalk.yellow(method);
-case 'DELETE': return chalk.red(method);
-case 'PATCH':  return chalk.magenta(method);
-default:       return chalk.white(method);
-}
+  switch (method) {
+    case 'GET':    return chalk.green(method);
+    case 'POST':   return chalk.blue(method);
+    case 'PUT':    return chalk.yellow(method);
+    case 'DELETE': return chalk.red(method);
+    case 'PATCH':  return chalk.magenta(method);
+    default:       return chalk.white(method);
+  }
 }
 
 // Morgan format function with colored method
 app.use(morgan((tokens, req, res) => {
-const meth   = tokens.method(req, res);
-const url    = tokens.url(req, res);
-const status = tokens.status(req, res);
-const time   = tokens\['response-time']\(req, res) + ' ms';
-const coloredMethod = colorMethod(meth);
-
-return `${coloredMethod} ${url} ${status} ${time}`;
+  const meth   = tokens.method(req, res);
+  const url    = tokens.url(req, res);
+  const status = tokens.status(req, res);
+  const time   = tokens['response-time'](req, res) + ' ms';
+  const coloredMethod = colorMethod(meth);
+  return `${coloredMethod} ${url} ${status} ${time}`;
 }));
 
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*', // Allow requests from your frontend
+  credentials: true
+}));
 
 // Static files
-app.use('/uploads', express.static(path.join(\_\_dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Root route - health check endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'API is running' });
+});
 
 // API routes
 app.use('/api/products', productRoutes);
@@ -78,5 +85,5 @@ app.use(errorHandler);
 // Start server
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
-console.log(`Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
