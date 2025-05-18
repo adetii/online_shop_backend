@@ -1,39 +1,37 @@
+// middleware/authMiddleware.js
 import jwt from 'jsonwebtoken';
 import asyncHandler from './asyncHandler.js';
 import User from '../models/userModel.js';
 
-// Protect routes
-// Check the protect middleware to ensure it's correctly setting req.user
+// Protect routes middleware
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
   // Read JWT from the 'jwt' cookie
   token = req.cookies.jwt;
-  
-  // Also check Authorization header for token (for API clients)
+
+  // Fallback to Authorization header if no cookie
   if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      req.user = await User.findById(decoded.userId).select('-password');
-      
-      next();
-    } catch (error) {
-      console.error('Token verification error:', error);
-      res.status(401);
-      throw new Error('Not authorized, token failed');
-    }
-  } else {
+  if (!token) {
     res.status(401);
     throw new Error('Not authorized, no token');
   }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.userId).select('-password');
+    next();
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401);
+    throw new Error('Not authorized, token failed');
+  }
 });
 
-// Admin middleware
+// Admin authorization middleware
 const admin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
