@@ -1,93 +1,61 @@
+// controllers/contactController.js
 import asyncHandler from '../middleware/asyncHandler.js';
 import sendEmail from '../utils/sendEmail.js';
 
-// @desc    Send contact form email
+// @desc    Handle contact form submissions
 // @route   POST /api/contact
 // @access  Public
-const sendContactEmail = asyncHandler(async (req, res) => {
+const contactController = asyncHandler(async (req, res) => {
   const { name, email, subject, message } = req.body;
 
+  // 1) Basic validation
   if (!name || !email || !subject || !message) {
     res.status(400);
-    throw new Error('Please fill all fields');
+    throw new Error('All fields (name, email, subject, message) are required');
   }
 
-  try {
-    await sendEmail({
-      email: process.env.ADMIN_EMAIL || process.env.EMAIL_USERNAME,
-      subject: `Contact Form: ${subject}`,
-      html: `
-        <h3>New Contact Form Submission</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong> ${message.replace(/\n/g, '<br>')}</p>
-      `
-    });
-
-    // Send confirmation email to the user
-    await sendEmail({
-      email: email,
-      subject: 'Thank you for contacting us',
-      html: `
-        <h3>Thank you for contacting ShopSmart!</h3>
-        <p>Dear ${name},</p>
-        <p>We have received your message and will get back to you as soon as possible.</p>
-        <p>Best regards,</p>
-        <p>The ShopSmart Team</p>
-      `
-    });
-
-    res.status(200).json({ success: true, message: 'Email sent successfully' });
-  } catch (error) {
+  // Determine the admin/business recipient
+  const adminEmail = process.env.BUSINESS_EMAIL;
+  if (!adminEmail) {
     res.status(500);
-    throw new Error(`Email could not be sent: ${error.message}`);
-  }
-});
-
-// @desc    Submit contact form (without saving to database)
-// @route   POST /api/contact
-// @access  Public
-const submitContactForm = asyncHandler(async (req, res) => {
-  const { email, phone, message } = req.body;
-
-  if (!email || !message) {
-    res.status(400);
-    throw new Error('Email and message are required');
+    throw new Error('No recipient email configured');
   }
 
-  // Prepare email content
-  const htmlContent = `
+  // 2) Build the admin notification
+  const adminHtml = `
     <h2>New Contact Form Submission</h2>
-    <p><strong>From:</strong> ${email}</p>
-    <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
-    <p><strong>Message:</strong> ${message}</p>
-    <p>Submitted on: ${new Date().toLocaleString()}</p>
+    <p><strong>Name:</strong> ${name}</p>
+    <p><strong>Email:</strong> ${email}</p>
+    <p><strong>Subject:</strong> ${subject}</p>
+    <p><strong>Message:</strong><br/>${message.replace(/\n/g, '<br/>')}</p>
+    <hr/>
+    <p>Sent on: ${new Date().toLocaleString()}</p>
   `;
 
-  // Send email notification to the business/admin
-  try {
-    const recipientEmail = process.env.BUSINESS_EMAIL || 'kwadjofrancis004@gmail.com';
-    
-    if (!recipientEmail) {
-      throw new Error('No business email configured');
-    }
-    
-    await sendEmail({
-      email: recipientEmail,
-      subject: 'New Customer Message from Website',
-      message: `You have received a new message from ${email}: ${message}`,
-      html: htmlContent
-    });
-    
-    res.status(201).json({ message: 'Your message has been sent successfully' });
-  } catch (error) {
-    console.error('Email sending error:', error);
-    res.status(201).json({ 
-      message: 'Your message has been received, but there was an issue with email delivery',
-      emailError: true
-    });
-  }
+  // 3) Send to admin
+  await sendEmail({
+    email: adminEmail,
+    subject: `Contact Form: ${subject}`,
+    html: adminHtml,
+    text: message,
+  });
+
+  // 4) (Optional) send confirmation back to the user
+  const userHtml = `
+    <h2>Thank you for contacting us!</h2>
+    <p>Hi ${name},</p>
+    <p>We’ve received your message and will get back to you shortly.</p>
+    <p>— The ShopSmart Team</p>
+  `;
+  await sendEmail({
+    email: email,
+    subject: 'We received your message',
+    html: userHtml,
+    text: 'Thank you for contacting us! We have received your message.',
+  });
+
+  // 5) Respond to the client
+  res.status(200).json({ success: true, message: 'Your message has been sent.' });
 });
 
-export { sendContactEmail, submitContactForm };
+export default contactController;
