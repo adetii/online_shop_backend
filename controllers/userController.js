@@ -14,9 +14,11 @@ const authUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
-    generateToken(res, user._id);
+    // Capture the token returned by generateToken
+    const token = generateToken(res, user._id);
 
     res.json({
+      token,           // ← added
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -52,10 +54,11 @@ const registerUser = asyncHandler(async (req, res) => {
   if (user) {
     console.log('User registered successfully:', email);
     
-    // Generate token the same way as in login
-    generateToken(res, user._id);
+    // Capture the token returned by generateToken
+    const token = generateToken(res, user._id);
     
     res.status(201).json({
+      token,           // ← added
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -105,10 +108,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       
       const updatedUser = await user.save();
       
-      // Generate token with res parameter
-      generateToken(res, updatedUser._id);
+      // Capture the token returned by generateToken
+      const token = generateToken(res, updatedUser._id);
       
       res.json({
+        token,           // ← added
         _id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
@@ -137,8 +141,6 @@ const logoutUser = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
-// Add these functions to your userController.js
-
 // @desc    Get user wishlist
 // @route   GET /api/users/wishlist
 // @access  Private
@@ -162,7 +164,6 @@ const addToWishlist = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   
   if (user) {
-    // Check if product is already in wishlist
     const alreadyInWishlist = user.wishlist.find(
       id => id.toString() === productId
     );
@@ -215,46 +216,27 @@ const forgotPassword = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Get reset token
   const resetToken = user.getResetPasswordToken();
-
   await user.save({ validateBeforeSave: false });
 
-  // Create reset url
   const resetUrl = `${req.protocol}://${req.get(
     'host'
   )}/resetpassword/${resetToken}`;
 
-  const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
-
-  try {
-    // In a real application, you would send an email here
-    // For now, we'll just return the token in the response
-    console.log('Reset token generated:', resetToken);
-    console.log('Reset URL:', resetUrl);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Password reset email sent',
-      resetToken, // In production, you would NOT include this in the response
-    });
-  } catch (err) {
-    console.error(err);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-
-    await user.save({ validateBeforeSave: false });
-
-    res.status(500);
-    throw new Error('Email could not be sent');
-  }
+  console.log('Reset token generated:', resetToken);
+  console.log('Reset URL:', resetUrl);
+  
+  res.status(200).json({
+    success: true,
+    message: 'Password reset email sent',
+    resetToken, // In production, you would NOT include this in the response
+  });
 });
 
 // @desc    Reset password
 // @route   PUT /api/users/resetpassword/:resettoken
 // @access  Public
 const resetPassword = asyncHandler(async (req, res) => {
-  // Get hashed token
   const resetPasswordToken = crypto
     .createHash('sha256')
     .update(req.params.resettoken)
@@ -270,11 +252,9 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new Error('Invalid token or token has expired');
   }
 
-  // Set new password
   user.password = req.body.password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
-
   await user.save();
 
   res.status(200).json({
@@ -283,7 +263,6 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// Make sure to add these to your exports
 export {
   authUser,
   registerUser,
