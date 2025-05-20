@@ -27,10 +27,7 @@ const contactController = asyncHandler(async (req, res) => {
     <p><strong>Name:</strong> ${name}</p>
     <p><strong>Email:</strong> ${email}</p>
     <p><strong>Subject:</strong> ${subject}</p>
-    <p><strong>Message:</strong><br/>${message.replace(/\n/g, '<br/>')}</p>
-    <hr/>
-    <p>Sent on: ${new Date().toLocaleString()}</p>
-  `;
+    <p><strong>Message:</strong> ${message.replace(/\n/g, '<br/>')}</p>`;
 
   // 3) Send to admin
   await sendEmail({
