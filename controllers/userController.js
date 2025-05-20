@@ -227,14 +227,41 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   // Email configuration
   const message = `
-    <h1>Password Reset Request</h1>
-    <p>You are receiving this email because you (or someone else) has requested the reset of a password.</p>
-    <p>Please click on the following link to reset your password:</p>
-    <a href="${resetUrl}" target="_blank" style="color: #007bff; text-decoration: none;">Reset Password</a>
-    <p>If the link doesn't work, copy and paste this URL into your browser:</p>
-    <p>${resetUrl}</p>
-    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-    <p>This link will expire in 10 minutes.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+      <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #333; text-align: center; margin-bottom: 30px;">Password Reset Request</h1>
+        <p style="color: #666; font-size: 16px; line-height: 1.6;">
+          You are receiving this email because you (or someone else) has requested the reset of a password.
+        </p>
+        <p style="color: #666; font-size: 16px; line-height: 1.6;">
+          Please click on the button below to reset your password:
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" 
+             target="_blank" 
+             style="display: inline-block; padding: 15px 30px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; text-align: center; transition: background-color 0.3s;">
+            Reset Password
+          </a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; line-height: 1.6;">
+          If the button doesn't work, copy and paste this URL into your browser:
+        </p>
+        <p style="color: #007bff; font-size: 14px; word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #007bff;">
+          ${resetUrl}
+        </p>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+          <p style="color: #666; font-size: 14px; line-height: 1.6;">
+            If you did not request this, please ignore this email and your password will remain unchanged.
+          </p>
+          <p style="color: #999; font-size: 12px;">
+            <strong>Important:</strong> This link will expire in 10 minutes for security reasons.
+          </p>
+        </div>
+      </div>
+    </div>
   `;
 
   try {
