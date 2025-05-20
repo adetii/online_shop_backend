@@ -219,18 +219,47 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const resetToken = user.getResetPasswordToken();
   await user.save({ validateBeforeSave: false });
 
-  const resetUrl = `${req.protocol}://${req.get(
-    'host'
-  )}/resetpassword/${resetToken}`;
+  // Create the reset URL for your frontend
+  const resetUrl = `${process.env.CLIENT_URL || req.protocol + '://' + req.get('host')}/reset-password/${resetToken}`;
 
   console.log('Reset token generated:', resetToken);
   console.log('Reset URL:', resetUrl);
-  
-  res.status(200).json({
-    success: true,
-    message: 'Password reset email sent',
-    resetToken, // In production, you would NOT include this in the response
-  });
+
+  // Email configuration
+  const message = `
+    <h1>Password Reset Request</h1>
+    <p>You are receiving this email because you (or someone else) has requested the reset of a password.</p>
+    <p>Please click on the following link to reset your password:</p>
+    <a href="${resetUrl}" target="_blank" style="color: #007bff; text-decoration: none;">Reset Password</a>
+    <p>If the link doesn't work, copy and paste this URL into your browser:</p>
+    <p>${resetUrl}</p>
+    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+    <p>This link will expire in 10 minutes.</p>
+  `;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Password Reset Request',
+      message,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset email sent successfully',
+      // Don't include resetToken in production response for security
+    });
+  } catch (error) {
+    console.error('Email sending error:', error);
+    
+    // Clear the reset token if email sending fails
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(500);
+    throw new Error('Email could not be sent. Please try again later.');
+  }
 });
 
 // @desc    Reset password
