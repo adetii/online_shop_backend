@@ -220,7 +220,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   // Create the reset URL for your frontend
-  const resetUrl = `${process.env.FRONTEND_URL || req.protocol + '://' + req.get('host')}/reset-password/${resetToken}`;
+  const resetUrl = `${process.env.FRONTEND_URL || req.protocol + '://' + req.get('host')}/resetpassword/${resetToken}`;
 
   console.log('Reset token generated:', resetToken);
   console.log('Reset URL:', resetUrl);
