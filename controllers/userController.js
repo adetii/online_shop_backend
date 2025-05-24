@@ -13,16 +13,16 @@ const authUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
 
-  if (user && (await user.matchPassword(password))) {
-    // Capture the token returned by generateToken
-    const token = generateToken(res, user._id);
+ if (user && (await user.matchPassword(password))) {
+    // Generate token without setting cookie
+    const token = generateToken(user._id);
 
     res.json({
-      token,           // ← added
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      token: token, // Include token in response
     });
   } else {
     res.status(401);
